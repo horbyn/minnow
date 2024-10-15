@@ -7,10 +7,84 @@
 
 using namespace std;
 
+enum class HttpHeaderMethod
+{
+  GET = 0,
+  POST
+};
+enum class HttpHeaderVersion
+{
+  HTTP_1_0 = 0,
+  HTTP_1_1
+};
+enum class HttpHeaderAccept
+{
+  TEXT = 0,
+  JSON
+};
+enum class HttpHeaderConnection
+{
+  CLOSE = 0,
+  KEEP_ALIVE
+};
+
+struct HttpHeader
+{
+  HttpHeaderMethod method_;
+  std::string path_;
+  HttpHeaderVersion version_;
+  std::string host_;
+  HttpHeaderAccept accept_;
+  HttpHeaderConnection connection_;
+
+  HttpHeader( HttpHeaderMethod method,
+              std::string path,
+              HttpHeaderVersion version,
+              std::string host,
+              HttpHeaderAccept accept,
+              HttpHeaderConnection connection )
+    : method_( method )
+    , path_( path )
+    , version_( version )
+    , host_( host )
+    , accept_( accept )
+    , connection_( connection )
+  {}
+  std::string get_header() const
+  {
+    std::string method = method_ == HttpHeaderMethod::GET ? "GET" : "POST";
+    std::string version = version_ == HttpHeaderVersion::HTTP_1_0 ? "HTTP/1.0" : "HTTP/1.1";
+    std::string accept = accept_ == HttpHeaderAccept::TEXT ? "text/html" : "application/json";
+    std::string connection = connection_ == HttpHeaderConnection::CLOSE ? "close" : "keep-alive";
+    return method + " " + path_ + " " + version + "\r\n" + "Host: " + host_ + "\r\n" + "Accept: " + accept + "\r\n"
+           + "Connection: " + connection + "\r\n\r\n";
+  }
+};
+
 void get_URL( const string& host, const string& path )
 {
-  cerr << "Function called: get_URL(" << host << ", " << path << ")\n";
-  cerr << "Warning: get_URL() has not been implemented yet.\n";
+  /* In the get_URL function, implement the simple Web client as described in this file，
+     using the format of an HTTP （Web） request that you used earlier.
+     Use the TCPSocket and Address classes. */
+  HttpHeader header { HttpHeaderMethod::GET,
+                      path,
+                      HttpHeaderVersion::HTTP_1_1,
+                      host,
+                      HttpHeaderAccept::TEXT,
+                      HttpHeaderConnection::CLOSE };
+  TCPSocket sock {};
+  sock.set_blocking( true );
+  sock.connect( Address { host, "80" } );
+  auto write_bytes = sock.write( header.get_header() );
+  if ( write_bytes != header.get_header().size() ) {
+    throw runtime_error { "Error: bytes have been writen is not match with the header size" };
+  }
+  std::string recv_buff {};
+  while ( sock.eof() != true ) {
+    sock.read( recv_buff );
+    std::cout << recv_buff;
+  }
+  sock.shutdown( SHUT_RDWR );
 }
 
 int main( int argc, char* argv[] )
